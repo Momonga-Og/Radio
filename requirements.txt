@@ -1,5 +1,5 @@
 aiohttp
-interactions (https://github.com/interactions-py/interactions.py/releases)  # Updated line
+interactions
 asyncio
 subprocess
 os
