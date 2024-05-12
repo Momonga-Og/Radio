@@ -1,16 +1,19 @@
 import asyncio
 import logging
-from discord.ext import commands
-import interactions
 import aiohttp
 import subprocess
 import os
 
+from discord.ext import commands  # Import for discord.Intents
+
 logging.basicConfig(level=logging.INFO)
 
-intents = discord.Intents.default()
+
+logging.basicConfig(level=logging.INFO)
+
+intents = commands.Intents.default()
 intents.voice_states = True
-intents.guilds = True  # Add this line
+intents.guilds = True
 bot = interactions.Client(intents=intents)
 
 # Access bot token from environment variable
