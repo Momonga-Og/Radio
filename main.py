@@ -93,12 +93,14 @@ async def on_ready():
 
 @bot.command(name="join", description="Join your voice channel and stream radio")
 async def join(ctx):
-    if not ctx.author.voice:
+    if ctx.author.voice is None or ctx.author.voice.channel is None:
         await ctx.send('You must be in a voice channel to use this command.')
         return
+    
     voice_channel = ctx.author.voice.channel
     await join_and_play(ctx, voice_channel)
     await ctx.send(f'Joined voice channel and streaming radio from {RADIO_MARS_RSS_URL}')
+
 
 @bot.command(name="leave", description="Disconnect from the voice channel and stop streaming radio")
 async def leave(ctx):
