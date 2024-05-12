@@ -7,10 +7,11 @@ import interactions
 
 logging.basicConfig(level=logging.INFO)
 
-# Use interactions.Intents.default() for defining intents
-intents = interactions.Intents.default()
+# Create Intents manually
+intents = interactions.Intents()
 intents.voice_states = True
 intents.guilds = True
+
 bot = interactions.Client(intents=intents)
 
 # Access bot token from environment variable
