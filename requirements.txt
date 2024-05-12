@@ -1,4 +1,6 @@
-asyncio
-discord
 aiohttp
-discord.py-interactions
+interactions
+asyncio
+subprocess
+os
+discord.py  # Optional, depending on your final choice for Intents handling
