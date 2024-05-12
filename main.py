@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import discord
 from discord.ext import commands
 import interactions
 import aiohttp
@@ -19,9 +18,6 @@ DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
 # Radio station RSS feed URL
 RADIO_MARS_RSS_URL = 'https://www.radiomars.ma/ar/categorie/لايف-مارس/feed/'
-
-# Command prefix for bot interactions (optional, can be removed for slash commands)
-# COMMAND_PREFIX = '!'
 
 # FFmpeg path (adjust according to your system installation)
 FFMPEG_PATH = 'path/to/ffmpeg'  # Example: '/usr/bin/ffmpeg'
@@ -90,7 +86,7 @@ async def join_and_play(ctx, voice_channel):
     await asyncio.gather(play_audio_task, voice_client.wait_for_disconnect())
 
 
-@bot.command(
+@interactions.slash_command(
     name="join",
     description="Join your voice channel and stream radio",
 )
@@ -102,7 +98,7 @@ async def join(ctx: interactions.CommandContext):
     await join_and_play(ctx, voice_channel)
     await ctx.respond(f'Joined voice channel and streaming radio from {RADIO_MARS_RSS_URL}')
 
-@bot.command(
+@interactions.slash_command(
     name="leave",
     description="Disconnect from the voice channel and stop streaming radio",
 )
@@ -121,3 +117,4 @@ async def on_ready():
 
 
 client.run(DISCORD_BOT_TOKEN)
+
