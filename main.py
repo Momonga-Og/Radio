@@ -2,9 +2,10 @@ import asyncio
 import discord
 import aiohttp
 import subprocess
+import os  # Added for environment variables
 
-
-DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")  
+# Access bot token from environment variable
+DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
 # Radio station RSS feed URL
 RADIO_MARS_RSS_URL = 'https://www.radiomars.ma/ar/categorie/لايف-مارس/feed/'
@@ -47,7 +48,7 @@ async def join_and_play(ctx, voice_channel):
                 continue
 
             # Process audio using ffmpeg (replace with appropriate command for your setup)
-            process = subprocess.Popen([FFMPEG_PATH, '-i', stream_url, '-f', 's16le', '-ar', '48000', '-ac', '2', '-']), stdout=subprocess.PIPE)
+            process = subprocess.Popen([FFMPEG_PATH, '-i', stream_url, '-f', 's16le', '-ar', '48000', '-ac', '2', '-'], stdout=subprocess.PIPE)
             pcm_data = process.stdout
 
             try:
@@ -79,20 +80,4 @@ client = discord.Client(intents=intents)
 
 @client.event
 async def on_ready():
-    print(f'Logged in as {client.user} (ID: {client.user.id})')
-
-@client.event
-async def on_message(message):
-    if not message.author.bot and message.content.startswith(COMMAND_PREFIX):
-        if message.content.lower() == f'{COMMAND_PREFIX}join':
-            if not message.author.voice:
-                await message.channel.send('You must be in a voice channel to use this command.')
-                return
-            voice_channel = message.author.voice.channel
-            await join_and_play(message.context, voice_channel)
-        elif message.content.lower() == f'{COMMAND_PREFIX}leave':
-            if not client.voice_clients:
-                await message.channel.send('I am not currently connected to a voice channel.')
-                return
-            for voice_client in client.
-client.run(DISCORD_BOT_TOKEN)
+    print(
