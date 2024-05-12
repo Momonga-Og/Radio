@@ -1,6 +1,4 @@
 aiohttp
 interactions
 asyncio
-subprocess
-os
-discord.py  # Optional
+discord.py
