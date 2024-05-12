@@ -1,11 +1,10 @@
-import interactions
 import asyncio
 import logging
 import aiohttp
 import subprocess
 import os
 
-from discord import Intents  # Corrected import
+from discord import Intents
 from discord.ext import commands
 
 logging.basicConfig(level=logging.INFO)
@@ -13,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 intents = Intents.default()
 intents.voice_states = True
 intents.guilds = True
-bot = commands.Bot(command_prefix='!', intents=intents)  # Update Bot creation
+bot = commands.Bot(command_prefix='!', intents=intents)
 
 # Access bot token from environment variable
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
@@ -45,7 +44,6 @@ async def get_stream_url(rss_feed_url):
         except aiohttp.ClientError as e:
             logging.error(f'Error fetching RSS feed: {e}')
             return None
-
 
 # Function to join a voice channel and start streaming audio
 async def join_and_play(ctx, voice_channel):
@@ -87,36 +85,25 @@ async def join_and_play(ctx, voice_channel):
     # Wait for the coroutine to finish or for disconnection from voice channel
     await asyncio.gather(play_audio_task, voice_client.wait_for_disconnect())
 
+@bot.event
+async def on_ready():
+    print(f'Logged in as {bot.user} (ID: {bot.user.id})')
 
-@interactions.slash_command(
-    name="join",
-    description="Join your voice channel and stream radio",
-)
-async def join(ctx: interactions.CommandContext):
+@bot.command(name="join", description="Join your voice channel and stream radio")
+async def join(ctx):
     if not ctx.author.voice:
-        await ctx.respond('You must be in a voice channel to use this command.')
+        await ctx.send('You must be in a voice channel to use this command.')
         return
     voice_channel = ctx.author.voice.channel
     await join_and_play(ctx, voice_channel)
-    await ctx.respond(f'Joined voice channel and streaming radio from {RADIO_MARS_RSS_URL}')
+    await ctx.send(f'Joined voice channel and streaming radio from {RADIO_MARS_RSS_URL}')
 
-@interactions.slash_command(
-    name="leave",
-    description="Disconnect from the voice channel and stop streaming radio",
-)
-async def leave(ctx: interactions.CommandContext):
-    if not client.voice_clients:
-        await ctx.respond('I am not currently connected to a voice channel.')
+@bot.command(name="leave", description="Disconnect from the voice channel and stop streaming radio")
+async def leave(ctx):
+    if not ctx.voice_client:
+        await ctx.send('I am not currently connected to a voice channel.')
         return
-    for voice_client in client.voice_clients:
-        await voice_client.disconnect()
-    await ctx.respond('Disconnected from voice channel and stopped streaming radio.')
+    await ctx.voice_client.disconnect()
+    await ctx.send('Disconnected from voice channel and stopped streaming radio.')
 
-
-@client.event
-async def on_ready():
-    print(f'Logged in as {client.user} (ID: {client.user.id})')
-
-
-client.run(DISCORD_BOT_TOKEN)
-
+bot.run(DISCORD_BOT_TOKEN)
