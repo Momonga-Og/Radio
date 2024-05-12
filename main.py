@@ -1,3 +1,4 @@
+from discord import Intents
 import asyncio
 import logging
 import aiohttp
