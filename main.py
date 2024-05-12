@@ -5,7 +5,7 @@ import subprocess
 import os
 import discord
 from discord.ext import commands
-import interactions  # Import the interactions library
+import interactions  
 
 logging.basicConfig(level=logging.INFO)
 
@@ -14,16 +14,16 @@ intents.voice_states = True
 intents.guilds = True
 bot = interactions.Client(intents=intents)  # Initialize the bot with interactions.Client
 
-# Access bot token from environment variable
+# Access bot token 
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
-# Radio station RSS feed URL
+# Radio mars station RSS feed URL
 RADIO_MARS_RSS_URL = 'https://www.radiomars.ma/ar/categorie/لايف-مارس/feed/'
 
-# FFmpeg path (adjust according to your system installation)
+# FFmpeg path 
 FFMPEG_PATH = 'path/to/ffmpeg'  # Example: '/usr/bin/ffmpeg'
 
-# Function to parse the RSS feed and extract the live stream URL
+# asyncio to make the bot 2 things fetch the feed and prodcast it 
 async def get_stream_url(rss_feed_url):
     async with aiohttp.ClientSession() as session:
         try:
@@ -45,16 +45,16 @@ async def get_stream_url(rss_feed_url):
             logging.error(f'Error fetching RSS feed: {e}')
             return None
 
-# Function to join a voice channel and start streaming audio
+# # join a voice channel and start streaming audio
 async def join_and_play(ctx, voice_channel):
     if voice_channel is None:
         await ctx.respond('You must be in a voice channel to use this command.')
         return
 
-    # Connect to voice channel
+    # Connect to VC
     voice_client = await voice_channel.connect()
 
-    # Create a coroutine for audio processing
+    # to keep audio plying
     async def play_audio():
         while True:
             stream_url = await get_stream_url(RADIO_MARS_RSS_URL)
@@ -63,7 +63,7 @@ async def join_and_play(ctx, voice_channel):
                 await asyncio.sleep(5)
                 continue
 
-            # Process audio using ffmpeg (replace with appropriate command for your setup)
+            # ffmpeg setup dont you think about touching this lines
             process = subprocess.Popen([FFMPEG_PATH, '-i', stream_url, '-f', 's16le', '-ar', '48000', '-ac', '2', '-'], stdout=subprocess.PIPE)
             pcm_data = process.stdout
 
@@ -78,15 +78,15 @@ async def join_and_play(ctx, voice_channel):
             except Exception as e:
                 logging.error(f'Audio processing error: {e}')
 
-            # Stop stream if an error occurs or when disconnected
+            # stream stopped when the user dsiconennect
             if voice_client.is_connected():
                 await voice_client.disconnect()
             break
 
-    # Start the audio processing coroutine
+    # audio task
     play_audio_task = asyncio.create_task(play_audio())
 
-    # Wait for the coroutine to finish or for disconnection from voice channel
+    # stop routine when disco
     await asyncio.gather(play_audio_task, voice_client.wait_for_disconnect())
 
 # Define slash commands
