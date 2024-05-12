@@ -3,9 +3,11 @@ import logging
 import aiohttp
 import subprocess
 import os
+import discord  # Add this line to import the discord module
 
-from discord import Intents
 from discord.ext import commands
+
+# Rest of your code...
 
 logging.basicConfig(level=logging.INFO)
 
