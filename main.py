@@ -9,9 +9,9 @@ from discord.ext import commands
 
 logging.basicConfig(level=logging.INFO)
 
-intents = Intents.default()
+intents = discord.Intents.default()
 intents.voice_states = True
-intents.guilds = True
+intents.members = True  # Add this line to enable member intent
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 # Access bot token from environment variable
