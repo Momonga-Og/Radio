@@ -80,4 +80,22 @@ client = discord.Client(intents=intents)
 
 @client.event
 async def on_ready():
-    print(
+    print(f'Logged in as {client.user} (ID: {client.user.id})')
+
+@client.event
+async def on_message(message):
+    if not message.author.bot and message.content.startswith(COMMAND_PREFIX):
+        if message.content.lower() == f'{COMMAND_PREFIX}join':
+            if not message.author.voice:
+                await message.channel.send('You must be in a voice channel to use this command.')
+                return
+            voice_channel = message.author.voice.channel
+            await join_and_play(message.context, voice_channel)
+        elif message.content.lower() == f'{COMMAND_PREFIX}leave':
+            if not client.voice_clients:
+                await message.channel.send('I am not currently connected to a voice channel.')
+                return
+            for voice_client in client.voice_clients:
+                await voice_client.disconnect()
+
+client.run(DISCORD_BOT_TOKEN)
