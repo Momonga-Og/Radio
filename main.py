@@ -11,6 +11,7 @@ logging.basicConfig(level=logging.INFO)
 
 intents = discord.Intents.default()
 intents.voice_states = True
+intents.guilds = True  # Add this line
 bot = interactions.Client(intents=intents)
 
 # Access bot token from environment variable
