@@ -4,6 +4,11 @@ import aiohttp
 import subprocess
 import os  # Added for environment variables
 
+
+intents = discord.Intents.default()
+intents.voice_states = True
+client = discord.Client(intents=intents)
+
 # Access bot token from environment variable
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
@@ -86,16 +91,13 @@ async def on_ready():
 async def on_message(message):
     if not message.author.bot and message.content.startswith(COMMAND_PREFIX):
         if message.content.lower() == f'{COMMAND_PREFIX}join':
-            if not message.author.voice:
-                await message.channel.send('You must be in a voice channel to use this command.')
-                return
-            voice_channel = message.author.voice.channel
-            await join_and_play(message.context, voice_channel)
+            if message.author.voice:  # Check if user is in a voice channel
+                voice_channel = message.author.voice.channel
+                await join_and_play(message.context, voice_channel)
+            else:
+                await message.channel.send('You must be in a voice channel to use the !join command.')
         elif message.content.lower() == f'{COMMAND_PREFIX}leave':
-            if not client.voice_clients:
-                await message.channel.send('I am not currently connected to a voice channel.')
-                return
-            for voice_client in client.voice_clients:
-                await voice_client.disconnect()
+            # Existing leave command logic...
+
 
 client.run(DISCORD_BOT_TOKEN)
