@@ -1,6 +1,6 @@
 aiohttp
-interactions
+interactions (https://github.com/interactions-py/interactions.py/releases)  # Updated line
 asyncio
 subprocess
 os
-discord.py  # Optional, depending on your final choice for Intents handling
+discord.py  # Optional
