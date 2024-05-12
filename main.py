@@ -1,5 +1,7 @@
 import asyncio
 import discord
+from discord.ext import commands
+import interactions
 import aiohttp
 import subprocess
 import os  # Added for environment variables
@@ -7,7 +9,7 @@ import os  # Added for environment variables
 
 intents = discord.Intents.default()
 intents.voice_states = True
-client = discord.Client(intents=intents)
+bot = interactions.Client(intents=intents)
 
 # Access bot token from environment variable
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
@@ -78,6 +80,19 @@ async def join_and_play(ctx, voice_channel):
     # Wait for the coroutine to finish or for disconnection from voice channel
     await asyncio.gather(play_audio_task, voice_client.wait_for_disconnect())
 
+@bot.command(
+    name="join",
+    description="Join your voice channel and stream radio",
+)
+async def join(ctx: interactions.CommandContext):
+    # Existing logic to join voice channel and start streaming...
+
+@bot.command(
+    name="leave",
+    description="Disconnect from the voice channel and stop streaming radio",
+)
+async def leave(ctx: interactions.CommandContext):
+    # Existing logic to disconnect from voice channel...
 
 
 @client.event
