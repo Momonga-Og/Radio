@@ -8,7 +8,7 @@ import interactions
 logging.basicConfig(level=logging.INFO)
 
 # Use interactions.Intents for defining intents
-intents = interactions.Intents(value=0)
+intents = interactions.Intents()
 intents.voice_states = True
 intents.guilds = True
 bot = interactions.Client(intents=intents)
@@ -89,14 +89,14 @@ async def join_and_play(ctx, voice_channel):
     await asyncio.gather(play_audio_task, voice_client.wait_for_disconnect())
 
 # Define slash commands using interactions library
-@bot.command(
+@bot.slash_command(
     name="join",
     description="Join your voice channel and stream radio"
 )
 async def join(ctx):
     await join_and_play(ctx, ctx.author.voice.channel)
 
-@bot.command(
+@bot.slash_command(
     name="leave",
     description="Disconnect from the voice channel and stop streaming radio"
 )
