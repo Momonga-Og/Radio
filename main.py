@@ -8,7 +8,7 @@ import interactions
 logging.basicConfig(level=logging.INFO)
 
 # Use interactions.Intents for defining intents
-intents = interactions.Intents()
+intents = interactions.Intents(value=0)
 intents.voice_states = True
 intents.guilds = True
 bot = interactions.Client(intents=intents)
