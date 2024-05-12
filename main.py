@@ -11,7 +11,6 @@ logging.basicConfig(level=logging.INFO)
 intents = interactions.Intents()
 intents.voice_states = True
 intents.guilds = True
-bot = interactions.Client(intents=intents)
 
 # Access bot token from environment variable
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
