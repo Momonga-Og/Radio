@@ -3,12 +3,11 @@ import logging
 import aiohttp
 import subprocess
 import os
-import discord
 import interactions
 
 logging.basicConfig(level=logging.INFO)
 
-intents = discord.Intents.default()
+intents = interactions.Intents.default()
 intents.voice_states = True
 intents.guilds = True
 bot = interactions.Client(intents=intents)
@@ -68,11 +67,11 @@ async def join_and_play(ctx, voice_channel):
 
             try:
                 while True:
-                    data = await pcm_data.read(discord.opus.OpusVoicePacket.MAX_SIZE)
+                    data = await pcm_data.read(interactions.opus.OpusVoicePacket.MAX_SIZE)
                     if not data:
                         break
-                    await voice_client.send_audio(discord.PCMVoicePacket(data=data, timestamp=ctx.message.created_at))
-            except discord.opus.OpusNotLoaded:
+                    await voice_client.send_audio(interactions.PCMVoicePacket(data=data, timestamp=ctx.message.created_at))
+            except interactions.opus.OpusNotLoaded:
                 logging.error('Opus not loaded, consider installing libopus')
             except Exception as e:
                 logging.error(f'Audio processing error: {e}')
@@ -89,11 +88,17 @@ async def join_and_play(ctx, voice_channel):
     await asyncio.gather(play_audio_task, voice_client.wait_for_disconnect())
 
 # Define slash commands using interactions library
-@bot.command(name="join", description="Join your voice channel and stream radio")
+@bot.slash_command(
+    name="join",
+    description="Join your voice channel and stream radio"
+)
 async def join(ctx):
     await join_and_play(ctx, ctx.author.voice.channel)
 
-@bot.command(name="leave", description="Disconnect from the voice channel and stop streaming radio")
+@bot.slash_command(
+    name="leave",
+    description="Disconnect from the voice channel and stop streaming radio"
+)
 async def leave(ctx):
     if not bot.voice_clients:
         await ctx.respond('I am not currently connected to a voice channel.')
