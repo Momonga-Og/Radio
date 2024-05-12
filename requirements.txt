@@ -1,5 +1,5 @@
 asyncio
 discord
 aiohttp
-discord.py
+discord.py-interactions
 interactions
