@@ -8,7 +8,7 @@ import interactions
 logging.basicConfig(level=logging.INFO)
 
 # Create Intents manually
-intents = interactions.Intents()
+intents = interactions.Intents(value=0)  # Set the value as needed
 intents.voice_states = True
 intents.guilds = True
 
