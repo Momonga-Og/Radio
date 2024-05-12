@@ -1,21 +1,18 @@
-from discord import Intents
 import asyncio
 import logging
 import aiohttp
 import subprocess
 import os
 
-from discord.ext import commands  # Import for discord.Intents
+from discord import Intents  # Corrected import
+from discord.ext import commands
 
 logging.basicConfig(level=logging.INFO)
 
-
-logging.basicConfig(level=logging.INFO)
-
-intents = commands.Intents.default()
+intents = Intents.default()
 intents.voice_states = True
 intents.guilds = True
-bot = interactions.Client(intents=intents)
+bot = commands.Bot(command_prefix='!', intents=intents)  # Update Bot creation
 
 # Access bot token from environment variable
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
