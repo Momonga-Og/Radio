@@ -5,6 +5,7 @@ import logging
 import aiohttp
 import subprocess
 import os
+import requests
 
 logging.basicConfig(level=logging.INFO)
 
@@ -18,9 +19,23 @@ tree = bot.tree
 # Access bot token from environment variable
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
+
+# Function to stream audio from a URL
+def stream_audio(url):
+    # Fetch audio data from URL
+    response = requests.get(url)
+    if response.status_code == 200:
+        audio_data = response.content
+
+# Example usage
+stream_audio('https://npr-ice.streamguys1.com/live.mp3')
+
+
+
+
 @tree.command(name='hello', description='Replies with Hello!')
 async def hello_command(interaction: discord.Interaction):
-    await interaction.response.send_message('sir t9awed!')
+    await interaction.response.send_message('Hello!')
 
 
 # Radio station RSS feed URL
