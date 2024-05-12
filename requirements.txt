@@ -1,4 +1,3 @@
 aiohttp
-interactions
 asyncio
-discord.py
+discord.py-interactions
