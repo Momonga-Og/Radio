@@ -2,184 +2,195 @@ import discord
 from discord.ext import commands
 import asyncio
 import logging
-import aiohttp
-import subprocess
 import os
 import requests
+import io
+import pygame
 
-logging.basicConfig(level=logging.INFO)
+# Configure logging
+logging.basicConfig(format="[%(levelname)s] %(asctime)s: %(message)s", level=logging.INFO)
 
+# Discord Intents
 intents = discord.Intents.default()
 intents.members = True
 intents.voice_states = True
-intents.message_content = True  # To handle message-related commands
-bot = commands.Bot(command_prefix='!', intents=intents)
-# Use the existing command tree from the bot
+intents.message_content = True
+
+# Discord bot instance with command prefix and intents
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+# Slash command tree
 tree = bot.tree
-# Access bot token from environment variable
+
+# Pygame initialization for audio playback
+pygame.mixer.init()
+
+# Environment variable for Discord bot token
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
-
-# Function to stream audio from a URL
-def stream_audio(url):
-    # Fetch audio data from URL
-    response = requests.get(url)
-    if response.status_code == 200:
-        audio_data = response.content
-
-# Example usage
-stream_audio('https://npr-ice.streamguys1.com/live.mp3')
+# Radio stream URL
+audio_url = "https://hitradio-maroc.ice.infomaniak.ch/hitradio-maroc-128.mp3"
 
 
+def play_audio_from_url(url):
+    """
+    Fetches and plays audio from a URL using Pygame mixer.
+
+    Args:
+        url (str): The URL of the audio stream.
+    """
+    try:
+        # Fetch audio data
+        response = requests.get(url, stream=True)
+        if response.status_code == 200:
+            # Load audio data
+            audio_data = io.BytesIO(response.content)
+            pygame.mixer.music.load(audio_data)
+            logging.info("Audio loaded successfully.")
+            # Play audio
+            pygame.mixer.music.play()
+            logging.info("Audio playback started.")
+        else:
+            logging.error(f"Failed to fetch audio data: {response.status_code}")
+    except Exception as e:
+        logging.error(f"Error loading or playing audio: {e}")
 
 
-@tree.command(name='hello', description='Replies with Hello!')
-async def hello_command(interaction: discord.Interaction):
-    await interaction.response.send_message('Hello!')
-
-
-# Radio station RSS feed URL
-RADIO_MARS_RSS_URL = 'https://npr-ice.streamguys1.com/live.mp3'
-
-# FFmpeg path (adjust according to your system installation)
-FFMPEG_PATH = r'C:\Users\User\Desktop\ffmpeg\ffmpeg-master-latest-win64-gpl\ffmpeg.exe'
-
-# Function to parse the RSS feed and extract the live stream URL
-async def get_stream_url(rss_feed_url):
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(rss_feed_url) as response:
-                if response.status == 200:
-                    data = await response.text()
-                    try:
-                        from xml.etree import ElementTree as ET  # Python 3
-                        root = ET.fromstring(data)
-                    except ImportError:
-                        from xml.etree.ElementTree import fromstring  # Python 2
-                        root = fromstring(data)
-
-                    for item in root.findall('channel/item'):
-                        for enclosure in item.findall('enclosure'):
-                            return enclosure.get('url')
-                    return None
-        except aiohttp.ClientError as e:
-            logging.error(f'Error fetching RSS feed: {e}')
-            return None
-
-# Function to join a voice channel and start streaming audio
-async def join_and_play(ctx, voice_channel):
-    if voice_channel is None:
-        await ctx.respond('You must be in a voice channel to use this command.')
-        return
-
-    # Connect to voice channel
-    voice_client = await voice_channel.connect()
-
-    # Create a coroutine for audio processing
-    async def play_audio():
-        while True:
-            stream_url = await get_stream_url(RADIO_MARS_RSS_URL)
-            if not stream_url:
-                logging.warning('Stream URL not found, retrying in 5 seconds')
-                await asyncio.sleep(5)
-                continue
-
-            # Process audio using ffmpeg (replace with appropriate command for your setup)
-            process = subprocess.Popen([FFMPEG_PATH, '-i', stream_url, '-f', 's16le', '-ar', '48000', '-ac', '2', '-'], stdout=subprocess.PIPE)
-            pcm_data = process.stdout
-
-            try:
-                while True:
-                    data = await pcm_data.read(discord.opus.OpusVoicePacket.MAX_SIZE)
-                    if not data:
-                        break
-                    await voice_client.send_audio(discord.PCMVoicePacket(data=data, timestamp=ctx.message.created_at))
-            except discord.opus.OpusNotLoaded:
-                logging.error('Opus not loaded, consider installing libopus')
-            except Exception as e:
-                logging.error(f'Audio processing error: {e}')
-
-            # Stop stream if an error occurs or when disconnected
-            if voice_client.is_connected():
-                await voice_client.disconnect()
-            break
-
-    # Start the audio processing coroutine
-    play_audio_task = asyncio.create_task(play_audio())
-
-    # Wait for the coroutine to finish or for disconnection from voice channel
-    await asyncio.gather(play_audio_task, voice_client.wait_for_disconnect())
-# Event: when the bot is ready
 @bot.event
 async def on_ready():
-    # Sync command tree with Discord
+    """
+    Event handler for when the bot is ready.
+
+    Attempts to synchronize slash commands with Discord.
+    """
     try:
-        await tree.sync()  # Sync globally or for specific guild
-        print(f'Logged in as {bot.user}')
+        await bot.tree.sync()
+        logging.info(f'Logged in as {bot.user}')
     except Exception as e:
-        print(f"Error during command sync: {e}")
-# Define slash commands using  library
+        logging.error(f"Error during command sync: {e}")
+
+
+@tree.command(
+    name="hello",
+    description="Replies with Hello!",
+)
+async def hello_command(interaction: discord.Interaction):
+    """
+    Simple slash command that replies with "Hello!"
+    """
+    await interaction.response.send_message("Hello!")
+
+
 @tree.command(
     name="join",
-    description="Join your voice channel and stream radio"
+    description="Join your voice channel and stream radio",
 )
 async def join(interaction: discord.Interaction):
-    # Check if the user is in a voice channel
+    """
+    Join user's voice channel and start streaming radio.
+
+    Checks for existing connection, user's voice channel presence,
+    and handles potential errors. Informs the user if already connected elsewhere.
+    """
+
+    # Check for existing connection in the current server
+    if bot.voice_clients:
+        for voice_client in bot.voice_clients:
+            if voice_client.guild.id == interaction.guild.id:
+                await interaction.response.send_message(
+                    "I am already connected to a voice channel in this server."
+                )
+                return
+
+    # No existing connection in this server, proceed with joining
+
     voice_state = interaction.user.voice
-    if voice_state is None or voice_state.channel is None:
-        await interaction.response.send_message('You must be in a voice channel to use this command.')
+    if not voice_state or not voice_state.channel:
+        await interaction.response.send_message("You must be in a voice channel to use this command.")
         return
 
-    # Get the voice channel
     voice_channel = voice_state.channel
 
-    # Connect to the voice channel
-    voice_client = await voice_channel.connect()
+    try:
+        voice_client = await voice_channel.connect()
+        await join_and_play(interaction, voice_client)
+        logging.info(f"Joined voice channel: {voice_channel}")
+    except Exception as e:
+        logging.error(f"Error joining voice channel: {e}")
+        await interaction.response.send_message("Failed to join voice channel.")
 
-    # Start streaming audio
-    await join_and_play(interaction, voice_client)
 
 async def join_and_play(interaction, voice_client):
-    while True:
-        # Get the stream URL
-        stream_url = await get_stream_url(RADIO_MARS_RSS_URL)
-        if not stream_url:
-            logging.warning('Stream URL not found, retrying in 5 seconds')
-            await asyncio.sleep(5)
-            continue
+    """
+    Starts streaming audio from the radio URL using FFmpegPCMAudio.
 
-        # Process audio using ffmpeg or any other suitable method
-        process = subprocess.Popen([FFMPEG_PATH, '-i', stream_url, '-f', 's16le', '-ar', '48000', '-ac', '2', '-'], stdout=subprocess.PIPE)
-        pcm_data = process.stdout
+    Handles potential errors during playback.
+    """
+    stream_url = audio_url  # Replace with your radio stream URL
+    if not stream_url:
+        logging.warning("Stream URL not found")
+        return
 
-        try:
-            while True:
-                data = await pcm_data.read(discord.opus.OpusVoicePacket.MAX_SIZE)
-                if not data:
-                    break
-                await voice_client.send_audio(discord.PCMVoicePacket(data=data, timestamp=datetime.datetime.utcnow()))
-        except discord.opus.OpusNotLoaded:
-            logging.error('Opus not loaded, consider installing libopus')
-        except Exception as e:
-            logging.error(f'Audio processing error: {e}')
+    try:
+        voice_client.play(discord.FFmpegPCMAudio(stream_url))
+        logging.info("Audio playback started.")
+    except Exception as e:
+        logging.error(f"Error playing audio: {e}")
+        await interaction.response.send_message("Failed to start audio playback.")
 
-        # Disconnect if an error occurs
-        if not voice_client.is_playing():
-            await voice_client.disconnect()
-            break
+
+@tree.command(
+    name="stop",
+    description="Stop streaming radio while remaining in the voice channel",
+)
+async def stop(interaction: discord.Interaction):
+    """
+    Stops the radio stream playback but stays connected to the voice channel.
+
+    Checks for existing connection and handles potential errors.
+    """
+    voice_client = bot.voice_clients and bot.voice_clients.get(interaction.guild.id)
+
+    if not voice_client:
+        await interaction.response.send_message("I am not currently streaming radio.")
+        return
+
+    if not voice_client.is_playing():
+        await interaction.response.send_message("Radio is already stopped.")
+        return
+
+    try:
+        voice_client.stop()
+        logging.info("Audio playback stopped.")
+    except Exception as e:
+        logging.error(f"Error stopping audio playback: {e}")
+        await interaction.response.send_message("Failed to stop audio playback.")
 
 
 @tree.command(
     name="leave",
-    description="Disconnect from the voice channel and stop streaming radio"
+    description="Disconnect from the voice channel and stop streaming radio",
 )
-async def leave(ctx):
-    if not bot.voice_clients:
-        await ctx.respond('I am not currently connected to a voice channel.')
-        return
-    for voice_client in bot.voice_clients:
-        await voice_client.disconnect()
-    await ctx.respond('Disconnected from voice channel and stopped streaming radio.')
+async def leave(interaction: discord.Interaction):
+    """
+    Disconnects from the voice channel and stops streaming radio.
 
-# Bot client setup
+    This functionality remains mostly unchanged.
+    """
+    voice_client = bot.voice_clients and bot.voice_clients.get(interaction.guild.id)
+
+    if not voice_client:
+        await interaction.respond("I am not currently connected to a voice channel.")
+        return
+
+    try:
+        await voice_client.disconnect()
+        logging.info(f"Disconnected from voice channel: {voice_client.channel}")
+    except Exception as e:
+        logging.error(f"Error disconnecting from voice channel: {e}")
+        await interaction.respond("Failed to disconnect from voice channel.")
+
+# Bot client setup (remains unchanged)
 bot.run(DISCORD_BOT_TOKEN)
+
+
