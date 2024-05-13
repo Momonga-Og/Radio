@@ -23,7 +23,9 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 tree = bot.tree
 
 # Pygame initialization for audio playback
+pygame.mixer.quit()
 pygame.mixer.init()
+
 
 # Environment variable for Discord bot token
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
