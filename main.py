@@ -7,7 +7,7 @@ import requests
 import io
 import pygame
 
-# Configure logging
+# Configure logging -
 logging.basicConfig(format="[%(levelname)s] %(asctime)s: %(message)s", level=logging.INFO)
 
 # Discord Intents
