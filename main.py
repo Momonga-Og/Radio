@@ -22,10 +22,13 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # Slash command tree
 tree = bot.tree
 
-# Pygame initialization for audio playback
-pygame.mixer.quit()
-pygame.mixer.init()
-
+# Check if running in a CI/CD environment
+if os.getenv('CI'):
+    print("Running in a CI/CD environment. Skipping audio initialization.")
+else:
+    # Pygame initialization for audio playback
+    pygame.mixer.quit()
+    pygame.mixer.init()
 
 # Environment variable for Discord bot token
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
