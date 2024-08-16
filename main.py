@@ -28,7 +28,7 @@ else:
     # Pygame initialization for audio playback
     pygame.mixer.quit()
     pygame.mixer.init()
-    
+
 # Environment variable for Discord bot token
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
@@ -235,6 +235,17 @@ async def check_voice_clients():
                 # Optionally, restart playback with a selected radio station here
             except Exception as e:
                 logging.error(f"Error reconnecting to voice channel: {e}")
+
+# New super slash command
+@tree.command(
+    name="super",
+    description="A powerful super command with additional capabilities"
+)
+async def super_command(interaction: discord.Interaction):
+    """
+    Executes a powerful super command with additional capabilities.
+    """
+    await interaction.response.send_message("This is the super command! 🚀")
 
 # Bot client setup (remains unchanged)
 bot.run(DISCORD_BOT_TOKEN)
