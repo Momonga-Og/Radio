@@ -3,7 +3,7 @@ name: Deploy Discord Bot
 on:
   push:
     branches:
-      - main  # Adjust to your target branch
+      - main  
 
 jobs:
   deploy:
