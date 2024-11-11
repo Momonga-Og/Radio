@@ -36,7 +36,9 @@ radio_stations = {
     "Hit Radio": "https://hitradio-maroc.ice.infomaniak.ch/hitradio-maroc-128.mp3",
     "Radio Aswat": "https://aswat.ice.infomaniak.ch/aswat-high.mp3",
     "Medina FM": "https://medinafm.ice.infomaniak.ch/medinafm-64.mp3",
-    "Qor2an": "https://virmach1.hajjam.net:8005/stream/1/"
+    "Qor2an": "https://virmach1.hajjam.net:8005/stream/1/",
+    "nrjmaroc": "https://icecast.nrjmaroc.com/stream?origine=nrjmaroc.com"
+
 }
 
 def play_audio_from_url(url):
